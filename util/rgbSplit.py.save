@@ -1,0 +1,11 @@
+from PIL import Image as jpg
+import numpy as np
+
+def removeColor(path):
+	im=jpg.open(path,'r')
+	data=np.array(im)
+	rgb=np.where(data == 255, 253, 0)
+		im=jpg.fromarray(data.astype('uint8'))
+	print(np.array(data))
+	im.save(path)
+	return True
