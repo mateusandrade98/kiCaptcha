@@ -15,7 +15,7 @@ n_hidden3 = 128 #layer3 oculta.
 n_output = 10 #saída.
 
 learning_rate = 1e-4 #taxa de aprendizado.
-n_iterations = 1000 #quantidade de interação.
+n_iterations = 5000 #quantidade de interação.
 batch_size = 128 #tamanho do lote.
 dropout = 0.5 #tamanho do drop 50%.
 
@@ -67,4 +67,6 @@ def initRecognize(img):
             print("Iteração", str(i), "\t| Perda =", str(minibatch_loss), "\t| Precisão =", str(minibatch_accuracy))#mostra o resultado da condição.
 
     prediction = sess.run(tf.argmax(output_layer,1), feed_dict={X: [img]}) #executa o reconhecimento da imagem, e retorna uma previsão de qual seria o número.
-    print("Previsão do número: ", np.squeeze(prediction))
+    prevision = np.squeeze(prediction)
+    print("Previsão do número:",prevision)
+    return prevision
