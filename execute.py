@@ -68,14 +68,12 @@ if dw.startDownload(url) == True:
 	ree  = []
 
 	for i in range(0,6):#prepara o thread
-		ree.insert(i,runnerNeuralThread(i))
+		ree.append(runnerNeuralThread(i))
 
 	for th in ree:
 		th.start()
 		th.join()
 		recognize=recognize+str(th.prevision)
-
-	print(recognize)
 
 	print('A previsão da númeração é:',recognize)
 else:

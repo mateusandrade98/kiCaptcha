@@ -80,6 +80,7 @@ def imageCrop(img):
 		crop = img.crop((i, 0, loss2[pos+1], 25))#corta as imagens baseado em limite
 		if(countPixels(crop) > 5):
 			bb+=1
+			crop = crop.filter(filter.GaussianBlur(0.8))
 			crop.save('captcha/00'+str(bb)+'.png')#salva a imagem
 	return img
 
@@ -140,6 +141,7 @@ def convertGray(path):
 	bw = gray.point(lambda x: 255 if x<230 else 0, '1')#converte a imagem para Gray, conta os pixels e verifica se o RGB for maior que 230, no caso é uma cor braco e retorna 0, caso o contario é uma cor escura e é retornado 255.
 	print('[!] Convertendo imagem para PNG com fundo branco...')
 	alpha = setAlphaImageToPNG(bw)#converte imagem para um PNG com fundo transparente.
+	#alpha = alpha.filter(filter.GaussianBlur(1))
 	alpha.save(path)#salva a imagem com a conversão binária(preto e branco).
 	print('[+] Imagem tratada e salva com sucesso -> '+path)
 	if execute_crop == "":
