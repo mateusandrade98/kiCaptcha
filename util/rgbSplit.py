@@ -2,14 +2,26 @@ from PIL import Image as png #importação da biblioteca de tratamento de imagem
 from PIL import ImageFilter as filter  #importação da biblioteca de tratamento de imagemself.
 import numpy as np #importação da biblioteca de criação de conjuntos multidimensionais.
 
-#def imageCrop(img,left,top):
-#	im = img.convert('RGBA')
-#	x 	= int(im.size[0])
-#	y 	= int(im.size[1])
-#	right	= 20
-#	bottom	= 50
-#	crop= im.crop((left, top, right, bottom))
-#	return crop
+def setGrayScale(img):
+	gray        = img.convert('L')
+	im          = gray.point(lambda x: 255 if x < 230 else 0, '1')
+	rgba        = im.load()
+	return rgba,im.size,im
+
+def insertWhiteColor(img,x,y):
+	imgg  =img.convert('RGBA')#converte RGB para RGBA - Red, Green, Blue, Alpha.
+	size= x,y
+	datas=imgg.getdata()#obtem todos os pares ordenados de cada pixel.
+	newData = []#cria uma lista para gerenciar os pares ordenados.
+	for item in datas:#ler um par ordenado de cada vez.
+		if (item[0],item[1],item[2],item[3]) == (255,255,255,0):#verifica se a cor é 255,255,255(branco).
+			newData.append((255, 255, 255, 255))#caso caia na condição aplica RGB 255,255,255(branco) e um alpha 0 -> 100% transparente, e joga o resultado dentro da lista.
+		else:
+			newData.append(item)#caso a condição não se aplicar, resulta no RGB normal, no caos 0,0,0(preto).
+		imgg.putdata(newData)#substitui os dados pelo os novos dentro da imagem.
+	imgg.thumbnail(size, png.ANTIALIAS)
+	return imgg
+
 
 def countPixels(img):
 	total = 0
@@ -19,11 +31,102 @@ def countPixels(img):
 		for j in range(y):
 			#verifica todos os pixels da imagem
 			r,g,b,a = rgba[i,j]#obtem o tupla RGBA
-			if r == 0 and g == 0 and b == 0 and a == 255:#encontrou cor, alpha == 255
-				total+=1#adiciona +1 no total
+			#if isBackgroundBlack == 0:
+			#	if (r,g,b,a) == (0,0,0,255):#encontrou cor, alpha == 255
+			#		total+=1#adiciona +1 no total
+			if (r,g,b,a) == (0,0,0,255):#encontrou cor, alpha == 255
+					total+=1#adiciona +1 no total
+			#else:
+			#	if (r,g,b,a) == (255,255,255,255):#encontrou cor, alpha == 255
+			#		total+=1#adiciona +1 no total
 	return total
 
-def cognitiveCrop(im):
+def imageCropCognitive(img,position):
+
+		im 		= img.convert('RGBA')
+		rgba 	= im.load()
+		(x,y)	= im.size
+
+		 # variáveis para recorte
+		corte_xy = 0
+		pos_xy = []
+	    #-----------------------
+
+	    # loop para corte do eixo x e depois eixo y
+		for c in range(2):
+
+			cont = 0
+
+			eixo1 = y
+			eixo2 = x
+
+			if c == 0:
+				eixo1 = x
+				eixo2 = y
+
+	        # posicão eixo1, é x ou y (depende do valor de c)
+			for ex1 in range(eixo1):
+
+				fim = False
+
+	            # posicão eixo1, é x ou y (depende do valor de c)
+				for ex2 in range(eixo2):
+
+					corte_xy = ex1
+
+					if c == 0:
+						r, g, b, a = rgba[ex1, ex2]
+					else:
+						r, g, b, a = rgba[ex2, ex1]
+
+	                # verifica se é o primeiro ou o segundo corte
+					if cont == 0:
+
+	                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+	                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
+						if r == 0:
+
+	                        # salva o primeiro corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+							pos_xy.append(corte_xy-1)
+	                        #-----------------------------------------------------------------------------------
+
+							cont = 1
+
+							break
+	                    #-------------------------------------------------------------------------------
+
+					else:
+
+						fim = True
+
+	                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+	                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
+						if r == 0:
+							fim = False
+							break
+	                    #-------------------------------------------------------------------------------
+
+	                #---------------------------------------------
+
+	            # salva o ultimo corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+				if fim:
+					pos_xy.append(corte_xy)
+					break
+	            #---------------------------------------------------------------------------------
+
+	    #------------------------------------------------------
+		kx = pos_xy[0]+pos_xy[1]
+		ky = pos_xy[2]+pos_xy[3]
+		img_corte = img.crop((pos_xy[0], pos_xy[2], pos_xy[1], pos_xy[3]))
+		img_corte = img_corte.filter(filter.GaussianBlur(0.8))
+		img_corte = insertWhiteColor(img_corte,kx,ky)
+		if countPixels(img) > 10:
+			img_corte.save('captcha/00'+str(position)+'.png')
+
+		return img_corte
+
+def mulCrop(im):
+	count = 0
 	img = im.convert('RGBA')
 	rgba = img.load()
 	for y in range(60):
@@ -32,20 +135,19 @@ def cognitiveCrop(im):
 		for x in range(150):
 			r,g,b,a = rgba[x,y]
 
-			if r == 255 and g == 255 and b == 255:
+			if (r,g,b) == (255,255,255):
 				corte = True
 			else:
 				corte = False
 				break
 
 		if corte:
-			img = img.crop(( 0, 1 , 150, 60-y))
+			img = img.crop(( 0, 1, 150, 60-y))
 		else:
 			print('...')
 			break
 
 	img = img.crop((0,0,150,25))
-	img.save('cognitive.png')
 
 	return img
 
@@ -80,8 +182,10 @@ def imageCrop(img):
 		crop = img.crop((i, 0, loss2[pos+1], 25))#corta as imagens baseado em limite
 		if(countPixels(crop) > 5):
 			bb+=1
-			crop = crop.filter(filter.GaussianBlur(0.8))
-			crop.save('captcha/00'+str(bb)+'.png')#salva a imagem
+			if bb > 6:
+				break
+			crop = crop.filter(filter.GaussianBlur(0))
+			imageCropCognitive(crop,bb)
 	return img
 
 
@@ -125,7 +229,7 @@ def setAlphaImageToPNG(img):
 	datas=imgg.getdata()#obtem todos os pares ordenados de cada pixel.
 	newData = []#cria uma lista para gerenciar os pares ordenados.
 	for item in datas:#ler um par ordenado de cada vez.
-		if item[0] == 255 and item[1] == 255 and item[2] == 255:#verifica se a cor é 255,255,255(branco).
+		if (item[0],item[1],item[2],item[3]) == (255,255,255,255):#verifica se a cor é 255,255,255(branco).
 			newData.append((255, 255, 255, 255))#caso caia na condição aplica RGB 255,255,255(branco) e um alpha 0 -> 100% transparente, e joga o resultado dentro da lista.
 		else:
 			newData.append(item)#caso a condição não se aplicar, resulta no RGB normal, no caos 0,0,0(preto).
@@ -137,8 +241,14 @@ def convertGray(path):
 	im=png.open(path,'r')#abre a imagem, em modo de leitura.
 	execute_crop = input('Deseja cortar os elementos de um conjunto de números? (S/n): ').lower()
 	print('[!] Convertendo imagem para binário(preto&branco)...')
-	gray = im.convert('L')#converte a imagem para uma matriz do tipo L RGB GrayScale.
-	bw = gray.point(lambda x: 255 if x<230 else 0, '1')#converte a imagem para Gray, conta os pixels e verifica se o RGB for maior que 230, no caso é uma cor braco e retorna 0, caso o contario é uma cor escura e é retornado 255.
+	#gray = im.convert('L')#converte a imagem para uma matriz do tipo L RGB GrayScale.
+	#back = backgroundColor(gray)
+	#if back == 0:
+	#	bw = gray.point(lambda x: 255 if x < 230 else 0, '1')#converte a imagem para Gray, conta os pixels e verifica se o RGB for maior que 230, no caso é uma cor braco e retorna 0, caso o contario é uma cor escura e é retornado 255.
+	#bw = gray.point(lambda x: 255 if x < 230 else 0, '1')
+	#else:
+	#	bw = gray.point(lambda x: 255 if x>230 else 0, '1')
+	v,vv,bw = setGrayScale(im)
 	print('[!] Convertendo imagem para PNG com fundo branco...')
 	alpha = setAlphaImageToPNG(bw)#converte imagem para um PNG com fundo transparente.
 	#alpha = alpha.filter(filter.GaussianBlur(1))
@@ -148,8 +258,8 @@ def convertGray(path):
 		execute_crop = 's'
 	if execute_crop == "s":
 		print('[!] Localizando e cortando números')
-		cognitive = cognitiveCrop(alpha)
-		crop=imageCrop(cognitive)
+		mul = mulCrop(alpha)
+		crop=imageCrop(mul)
 	return path#retorna local da imagem.
 
 def arrayImage(path):

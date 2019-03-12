@@ -14,7 +14,7 @@ Espero que este projeto seja melhorado, estudado, e usado para uma gama maior de
 MUITO OBRIGADO!
 """
 
-
+#estrutura de execução em thread(execução em background, ou seja fora da thread principal)
 class runnerNeuralThread(threading.Thread):
    def __init__(self, threadID):
       threading.Thread.__init__(self)
@@ -26,10 +26,10 @@ class runnerNeuralThread(threading.Thread):
 	   self.prevision = recognize
 
 
-url='https://sigadmin.ufpb.br/admin/captcha.jpg'
+url='https://sigadmin.ufpb.br/admin/captcha.jpg'#link de download do captcha
 captchaPath = 'captcha/captcha.png'
 print('Iniciando kiCaptcha...')
-if dw.startDownload(url) == True:
+if dw.startDownload(url) == True:#função que executa o download e retorna True se conseguir
 	print('[+] Captcha baixado com sucesso ->',captchaPath)
 
 	execute_deal_image = input('Deseja tratar imagem? (S/n): ').lower()[:1]
@@ -38,7 +38,7 @@ if dw.startDownload(url) == True:
 	if execute_deal_image != 's' and execute_deal_image != 'n':
 		exit()
 	if execute_deal_image == "s":
-		captcha = rgb.dealImage(captchaPath)
+		captcha = rgb.dealImage(captchaPath)#executa o tratamento do captcha
 
 	execute_captcha = input('Deseja abrir o captcha? (s/N): ').lower()[:1]
 	if execute_captcha == '':
@@ -47,7 +47,7 @@ if dw.startDownload(url) == True:
 		exit()
 	if execute_captcha == "s":
 		print('[*] Visualizador de imagem...')
-		sp.run('feh '+captchaPath,shell=True,check=True)
+		sp.run('feh '+captchaPath,shell=True,check=True)#abre o processo feh(linux) para exibir a imagem
 
 	execute_netneural = input('Deseja executar a rede neural? (S/n): ').lower()[:1]
 	if execute_netneural == "":
@@ -57,20 +57,16 @@ if dw.startDownload(url) == True:
 	if execute_netneural != "s":
 		exit()
 	recognize=''
-	#captcha = rgb.arrayImage('captcha/captcha.png')
-	#recognize=rc.initRecognize(captcha)
-	#for i in range(0,6):
-	#	captcha = rgb.arrayImage('captcha/00'+str(i+1)+'.png')
-	#	recognize=recognize+str(rc.initRecognize(captcha))
-	print('[*] Iniciando threading... [6]')
-	print('[!] Preparando pixels(binário) e dimessão 28x28...')
+	
+	print('[*] Iniciando [6]Threading...')
+	print('[!] Convertendo RGBA da escala 0-255 para 0-1 e redimensionando para 28x28...')#pré-requisitos para analise da imagem na rede neural
 
 	ree  = []
 
-	for i in range(0,6):#prepara o thread
+	for i in range(0,6):#prepara as threads
 		ree.append(runnerNeuralThread(i))
 
-	for th in ree:
+	for th in ree:#executa as threads
 		th.start()
 		th.join()
 		recognize=recognize+str(th.prevision)
