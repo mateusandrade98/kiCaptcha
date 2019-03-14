@@ -8,8 +8,9 @@ Basicamente o projeto usa redes neurais e um [banco de dados de digitos](http://
 
 MUITO OBRIGADO!
 
-Instagram: Jessé Silva: @jesse_s.c
-           Joandeson Andrade: @johnandrade001
+Instagram: 
+Jessé Silva: @jesse_s.c
+Joandeson Andrade: @johnandrade001
 
 [Ver vídeo demonstrativo no Youtube](https://youtu.be/TgCXwobCuYg "Ver vídeo no Youtube")
 [![Clique para ver o vídeo](screenshot/001.png)](https://youtu.be/TgCXwobCuYg)
