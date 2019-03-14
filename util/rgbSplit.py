@@ -1,5 +1,6 @@
 from PIL import Image as png #importação da biblioteca de tratamento de imagemself.
 from PIL import ImageFilter as filter  #importação da biblioteca de tratamento de imagemself.
+from PIL import ImageDraw
 import numpy as np #importação da biblioteca de criação de conjuntos multidimensionais.
 
 def setGrayScale(img):
@@ -41,36 +42,48 @@ def countPixels(img):
 			#		total+=1#adiciona +1 no total
 	return total
 
-def imageCropCognitive(img,position):
+def imageCropCognitive(imagem):
 
-		im 		= img.convert('RGBA')
-		rgba 	= im.load()
-		(x,y)	= im.size
+	rgba = imagem.load()
+	x, y = imagem.size
+	img2 = imagem
+	ImageDraw.Draw(img2).rectangle((0, 0, x-1, y-1), outline=(255,255,255))
+	imagens = []
+	direita = 0
+	posicoes = []
 
-		 # variáveis para recorte
+	while direita < x:
+
+        # variáveis para recorte
 		corte_xy = 0
 		pos_xy = []
-	    #-----------------------
+        #-----------------------
 
-	    # loop para corte do eixo x e depois eixo y
+        # loop para corte do eixo x e depois eixo y
 		for c in range(2):
 
 			cont = 0
 
 			eixo1 = y
 			eixo2 = x
+			inicio1 = 0
+			inicio2 = direita
 
 			if c == 0:
+
 				eixo1 = x
 				eixo2 = y
+				inicio1 = direita
+				inicio2 = 0
 
-	        # posicão eixo1, é x ou y (depende do valor de c)
-			for ex1 in range(eixo1):
+
+            # posicão eixo1, é x ou y (depende do valor de c)
+			for ex1 in range(inicio1, eixo1):
 
 				fim = False
 
-	            # posicão eixo1, é x ou y (depende do valor de c)
-				for ex2 in range(eixo2):
+                # posicão eixo1, é x ou y (depende do valor de c)
+				for ex2 in range(inicio2, eixo2):
 
 					corte_xy = ex1
 
@@ -79,114 +92,123 @@ def imageCropCognitive(img,position):
 					else:
 						r, g, b, a = rgba[ex2, ex1]
 
-	                # verifica se é o primeiro ou o segundo corte
+                    # verifica se é o primeiro ou o segundo corte
 					if cont == 0:
 
-	                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
-	                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
-						if r == 0:
+                        # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+                        # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
 
-	                        # salva o primeiro corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
-							pos_xy.append(corte_xy-1)
-	                        #-----------------------------------------------------------------------------------
+						if r == 0:
+                            # salva o primeiro corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+							if ex1 >= 2:
+								pos_xy.append(corte_xy - 2)
+							else:
+								pos_xy.append(corte_xy)
+                            #-----------------------------------------------------------------------------------
 
 							cont = 1
 
 							break
-	                    #-------------------------------------------------------------------------------
+                        #-------------------------------------------------------------------------------
 
 					else:
 
 						fim = True
 
-	                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
-	                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
+                        # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+                        # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
 						if r == 0:
 							fim = False
 							break
-	                    #-------------------------------------------------------------------------------
+                        #-------------------------------------------------------------------------------
 
-	                #---------------------------------------------
 
-	            # salva o ultimo corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+                    #---------------------------------------------
+
+
+                # salva o ultimo corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+                #---------------------------------------------------------------------------------
 				if fim:
-					pos_xy.append(corte_xy)
+					if ex1 <= eixo1 - 2:
+						pos_xy.append(corte_xy + 2)
+					else:
+						pos_xy.append(corte_xy)
 					break
-	            #---------------------------------------------------------------------------------
 
-	    #------------------------------------------------------
-		kx = pos_xy[0]+pos_xy[1]
-		ky = pos_xy[2]+pos_xy[3]
-		img_corte = img.crop((pos_xy[0], pos_xy[2], pos_xy[1], pos_xy[3]))
-		img_corte = img_corte.filter(filter.GaussianBlur(0.8))
-		img_corte = insertWhiteColor(img_corte,kx,ky)
-		if countPixels(img) > 10:
-			img_corte.save('captcha/00'+str(position)+'.png')
 
-		return img_corte
+        #------------------------------------------------------
 
-def mulCrop(im):
-	count = 0
-	img = im.convert('RGBA')
-	rgba = img.load()
-	for y in range(60):
-		corte = False
-
-		for x in range(150):
-			r,g,b,a = rgba[x,y]
-
-			if (r,g,b) == (255,255,255):
-				corte = True
-			else:
-				corte = False
-				break
-
-		if corte:
-			img = img.crop(( 0, 1, 150, 60-y))
+		if len(pos_xy) == 4:
+			img_corte = img2.crop((pos_xy[0], pos_xy[2], pos_xy[1], pos_xy[3]))
+			imagens.append(img_corte)
+			posicoes.append([pos_xy[0], pos_xy[1], pos_xy[2], pos_xy[3]])
+			direita = pos_xy[1]
 		else:
-			print('...')
 			break
 
-	img = img.crop((0,0,150,25))
+	imagens_cortadas = []
 
-	return img
+	for p in range(len(posicoes)):
+
+		im2 = imagem
+		pos_xy = []
+		corte = cont = 0
+
+		for y in range(posicoes[p][2], posicoes[p][3]+1):
+
+			fim = False
+
+			for x in range(posicoes[p][0], posicoes[p][1]+1):
+
+				corte = y
+
+				r, g, b, a = rgba[x, y]
+
+				if cont == 0:
+
+                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
+
+					if r == 0:
+                        # salva o primeiro corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+						if y >= 2:
+							pos_xy.append(corte - 2)
+						else:
+							pos_xy.append(corte)
+                        #-----------------------------------------------------------------------------------
+
+						cont = 1
+
+						break
+                    #-------------------------------------------------------------------------------
+
+				else:
+					fim = True
+
+                    # verifica se o pixel é preto (não é necessário verificar o 'RGB' completo ...
+                    # ... porque se for preto será R=0 G=0 B=0, então só analizei uma paleta de cor)
+					if r == 0:
+						fim = False
+						break
+                    #-------------------------------------------------------------------------------
 
 
-def imageCrop(img):
-	rgba = img.load()#carrega o RGBA da imagem
-	x 	= int(img.size[0])#posição em X
-	y 	= int(img.size[1])#posição em Y
-	zcrop = []
-	loss  = []
-	last  = []
-	aa	  = 0
-	for i in range(x):
-		color = []
-		for j in range(y):
-			r,g,b,a = rgba[i,j]#obtem o tupla RGBA
-			if r == 0 and g == 0 and b == 0 and a == 255:#encontrou cor, alpha == 255
-				color.append(1)
+                #---------------------------------------------
+
+
+            # salva o ultimo corte do eixo 1 (dependendo do valor de c pode ser o eixo x ou y)
+			if fim:
+				if y <= posicoes[p][3]-1:
+					pos_xy.append(corte + 2)
+				else:
+					pos_xy.append(corte)
 				break
-		if len(color) == 0:#se não econtrou cor na linha do pixels
-			zcrop.append(i+1)
-	loss.append(0)
-	for i in zcrop:
-		aa+=1
-		if aa < i and i!=0:#quebrou a sequência
-			aa = i#salto de sequência
-			loss.append(aa)
-	loss2 = loss[:]
-	loss2.append(150)
-	bb=0
-	for pos,i in enumerate(loss):
-		crop = img.crop((i, 0, loss2[pos+1], 25))#corta as imagens baseado em limite
-		if(countPixels(crop) > 5):
-			bb+=1
-			if bb > 6:
-				break
-			crop = crop.filter(filter.GaussianBlur(0))
-			imageCropCognitive(crop,bb)
-	return img
+
+
+		imagens_cortadas.append(img2.crop((posicoes[p][0], pos_xy[0], posicoes[p][1], pos_xy[1])))
+
+
+	return imagens_cortadas
 
 
 def imagePrepare(img):
@@ -258,8 +280,12 @@ def convertGray(path):
 		execute_crop = 's'
 	if execute_crop == "s":
 		print('[!] Localizando e cortando números')
-		mul = mulCrop(alpha)
-		crop=imageCrop(mul)
+		imagens = imageCropCognitive(alpha)
+		bb=0
+		for image in imagens:
+			bb+=1
+			image = image.filter(filter.GaussianBlur(0.8))
+			image.save('captcha/00'+str(bb)+'.png')
 	return path#retorna local da imagem.
 
 def arrayImage(path):
